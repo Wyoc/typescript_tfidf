@@ -1,0 +1,6 @@
+/node_modules
+/dist
+/src-ssr
+/src-capacitor
+/src-cordova
+.eslintrc.js
