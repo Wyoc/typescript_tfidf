@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import json_pages from '../datas/base.json'
-import { Reco } from '../classes/Recommender';
+import { Reco, Document} from '../classes/Recommender';
 
 defineProps<{ msg: string }>();
 
@@ -17,12 +17,17 @@ function test() {
   var rows = [];
   var idx = []
   for (var i = 1; i <= 3; i++) {
-    rows.push({title: data[i]["title"], text: data[i]["extract"]});
+    rows.push(data[i]["extract"]);
     idx.push(data[i]["pageid"]);
   }
   // console.log(rows)
   console.log(idx)
-  var tfidf = new Reco();
+  var documents: Document[] = rows.map((row) => new Document(row));
+  console.log(documents[1].termFrequencies);
+
+  var reco = new Reco(rows);
+  reco.calculateCorpusFrequencies();
+  console.log(reco.corpusFrequencies);
 }
 
 test()
