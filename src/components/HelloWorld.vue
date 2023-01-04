@@ -1,9 +1,31 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import json_pages from '../datas/base.json'
+import { Reco } from '../classes/Recommender';
 
 defineProps<{ msg: string }>();
 
 const count = ref(0);
+
+function test() {
+
+
+  // wasm.greet();
+
+  // Build pages array
+  var data: any = json_pages["pages"];
+  var rows = [];
+  var idx = []
+  for (var i = 1; i <= 3; i++) {
+    rows.push({title: data[i]["title"], text: data[i]["extract"]});
+    idx.push(data[i]["pageid"]);
+  }
+  // console.log(rows)
+  console.log(idx)
+  var tfidf = new Reco();
+}
+
+test()
 </script>
 
 <template>
@@ -19,9 +41,8 @@ const count = ref(0);
 
   <p>
     Check out
-    <a href="https://vuejs.org/guide/quick-start.html#local" target="_blank"
-      >create-vue</a
-    >, the official Vue + Vite starter
+    <a href="https://vuejs.org/guide/quick-start.html#local" target="_blank">create-vue</a>, the official Vue + Vite
+    starter
   </p>
   <p>
     Install
