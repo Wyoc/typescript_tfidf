@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import json_pages from '../datas/base.json'
-import { Reco, Document, cosineSimilarity} from '../classes/Recommender';
+import { Reco, VectorizedDocument, cosineSimilarity} from '../classes/Recommender';
 
 defineProps<{ msg: string }>();
 
@@ -22,8 +22,6 @@ function test() {
   }
   // console.log(rows)
   console.log(idx)
-  var documents: Document[] = rows.map((row) => new Document(row));
-  console.log(documents[1].termFrequencies);
 
   var reco = new Reco(rows, idx);
   reco.fit();

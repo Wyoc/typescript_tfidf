@@ -3,7 +3,7 @@ export class Reco {
 
   private Cids: string[]
 
-  private Documents: Document[]
+  private Documents: VectorizedDocument[]
 
   private StopWords: string[]
 
@@ -11,7 +11,7 @@ export class Reco {
   constructor(texts: string[], cids: string[]) {
     this.Idf = new Map<string, number>;
     this.Cids = [];
-    this.Documents = texts.map((text: string, index) => new Document(text, cids[index]));
+    this.Documents = texts.map((text: string, index) => new VectorizedDocument(text, cids[index]));
     this.StopWords = []
   }
 
@@ -31,7 +31,7 @@ export class Reco {
     var corpusLength = this.Documents.length;
     console.log(corpusLength);
 
-    this.Documents.map((document: Document) => document.getUniqueTerms()
+    this.Documents.map((VectorizedDocument: VectorizedDocument) => VectorizedDocument.getUniqueTerms()
       .filter(word => !this.StopWords.includes(word))
       .map(word => {
         if (corpusFrequencies.has(word)) {
@@ -55,7 +55,7 @@ export class Reco {
       this.fit();
     }
     let vocabularyLength = this.Idf.keys.length;
-    this.Documents.forEach((document: Document) => {
+    this.Documents.forEach((document: VectorizedDocument) => {
       var tfVector = []
       for (var word of this.Idf.keys()) {
         if (document.termFrequencies.has(word)) {
@@ -73,11 +73,11 @@ export class Reco {
 
   }
 
-  public transformText(text: string): Document {
+  public transformText(text: string): VectorizedDocument {
     if (!this.Idf) {
       this.fit();
     }
-    var document = new Document(text, '')
+    var document = new VectorizedDocument(text, '')
     let vocabularyLength = this.Idf.keys.length;
 
     var tfVector = []
@@ -94,11 +94,16 @@ export class Reco {
     ;
     return document;
   }
+  public updateDocumentVector(cid: string){
+    
+  }
+
 }
 
 
 
-export class Document {
+
+export class VectorizedDocument {
 
   //private Words: string[] | undefined
 
@@ -126,13 +131,13 @@ export class Document {
     // this.Words = this.tokenize(text);
     this.Cid = cid;
     this.TermFrequencies = new Map<string, number>;
-    const tokenizedDocuments = this.tokenize(text);
-    this.calculateTermFrequencies(tokenizedDocuments);
+    const tokenizedVectorizedDocuments = this.tokenize(text);
+    this.calculateTermFrequencies(tokenizedVectorizedDocuments);
     this.Vector = [];
   }
 
-  public tokenize(document: string = ''): string[] | undefined {
-    return document.match(/[a-zA-ZÀ-ÖØ-öø-ÿ]+/g)
+  public tokenize(VectorizedDocument: string = ''): string[] | undefined {
+    return VectorizedDocument.match(/[a-zA-ZÀ-ÖØ-öø-ÿ]+/g)
       ?.filter((word: string) => {
         if (word.length < 2 || word.match(/^\d/)) {
           return false;
@@ -143,9 +148,9 @@ export class Document {
       .map((word: string) => word.toLowerCase());
   }
 
-  public calculateTermFrequencies(tokenizedDocuments: string[] | undefined) {
-    if (!tokenizedDocuments) return;
-    tokenizedDocuments.forEach(word => {
+  public calculateTermFrequencies(tokenizedVectorizedDocuments: string[] | undefined) {
+    if (!tokenizedVectorizedDocuments) return;
+    tokenizedVectorizedDocuments.forEach(word => {
       if (this.TermFrequencies.has(word)) {
         this.TermFrequencies.set(word, this.TermFrequencies.get(word) + 1)
       }
