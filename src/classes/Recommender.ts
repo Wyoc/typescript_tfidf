@@ -20,8 +20,10 @@ export class Reco {
     return this.Documents;
   }
 
-
-  public fit() {
+  /**
+   * A function gathering all Documents vocabularies and setting the Inverse Documents Frequencies (Idf) property.
+   */
+  public fit(): void {
     var corpusFrequencies = new Map<string, number>;
     var corpusLength = this.Documents.length;
 
@@ -41,6 +43,9 @@ export class Reco {
     })
   }
 
+  /**
+   * A function computing and setting vector representation of documents
+   */
   public transform() {
     if (!this.Idf) {
       this.fit();
@@ -60,10 +65,22 @@ export class Reco {
       }
 
 
-    });;
-
+    });
+  }
+  /**
+   * Perform both fit and transform function
+   */
+  public fitTransform(){
+    this.fit();
+    this.transform();
   }
 
+  /**
+   * Process a text and return a VectorizedDocument with its tf-idf vector.
+   * @param text - A string containing the document's content.
+   * @param cid - The Cid of document (default: '').
+   * @returns A VectrorizedDocument containing it's vector representation.
+   */
   public transformText(text: string, cid: string = ''): VectorizedDocument {
     if (!this.Idf) {
       this.fit();
@@ -85,6 +102,12 @@ export class Reco {
     ;
     return document;
   }
+
+  /**
+   * A function taking a new version of an existing document, updating its representation in the recommender.
+   * @param text - The new text of the document to update
+   * @param cid - The CID of the document.
+   */
   public updateDocumentVector(text: string, cid: string){
     var updatedDoc = this.transformText(text, cid);
     var docIndex = this.Documents.findIndex(doc => doc.cid ===cid);
@@ -173,9 +196,19 @@ export class VectorizedDocument {
 
 }
 
-export function cosineSimilarity(vector1: number[], vector2: number[]) {
-  const v1 = Array.from(vector1.values());
-  const v2 = Array.from(vector2.values());
+/**
+ * Compute the cosine similarity bewteen two vectors
+ * @param v1 - An array of number 
+ * @param v2 - An array of number
+ * @returns The cosine similarity of the two input vector
+ * @remarks 
+ * Cosine similarity is a measure of "closeness" between two vectors. 
+ * Two proportional vectors have a cosine similarity of 1, 
+ * two orthogonal vectors have a similarity of 0, 
+ * and two opposite vectors have a similarity of -1.
+ * @see {@link https://en.wikipedia.org/wiki/Cosine_similarity}.
+ */
+export function cosineSimilarity(v1: number[], v2: number[]): number {
   let dotProduct = 0.0;
   let ss1 = 0.0;
   let ss2 = 0.0;
