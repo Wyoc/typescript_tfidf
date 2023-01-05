@@ -1,5 +1,5 @@
 export class Reco {
-  private CorpusFrequencies: Map<string, number>
+  private Idf: Map<string, number>
 
   private Cids: string[]
 
@@ -7,57 +7,124 @@ export class Reco {
 
   private StopWords: string[]
 
-  public get corpusFrequencies(){
-    return this.CorpusFrequencies
-  }
 
-  constructor(texts: string[]) {
-    this.CorpusFrequencies = new Map<string, number>;
-    //this.TermFrequencies = new Array<Map<string, number>>
+  constructor(texts: string[], cids: string[]) {
+    this.Idf = new Map<string, number>;
     this.Cids = [];
-
-    this.Documents = texts.map((text: string) => new Document(text));
-
+    this.Documents = texts.map((text: string, index) => new Document(text, cids[index]));
     this.StopWords = []
   }
 
+  public get idf() {
+    return this.Idf;
+  }
+
+  public get documents() {
+    return this.Documents;
+  }
 
   /**
    * calculateCorpusFrequency
    */
-  public calculateCorpusFrequencies() {
+  public fit() {
+    var corpusFrequencies = new Map<string, number>;
+    var corpusLength = this.Documents.length;
+    console.log(corpusLength);
+
     this.Documents.map((document: Document) => document.getUniqueTerms()
-    .filter(word => !this.StopWords.includes(word))
-    .forEach(word => {
-      if(this.CorpusFrequencies.has(word)){
-        this.CorpusFrequencies.set(word, this.CorpusFrequencies.get(word) + 1);
+      .filter(word => !this.StopWords.includes(word))
+      .map(word => {
+        if (corpusFrequencies.has(word)) {
+          corpusFrequencies.set(word, corpusFrequencies.get(word) + 1);
+        }
+        else {
+          corpusFrequencies.set(word, 1);
+        }
+      })
+    );
+    console.log("hey"),
+      console.log(corpusFrequencies);
+    console.log('no more hey');
+    corpusFrequencies.forEach((count, word) => {
+      this.Idf.set(word, corpusLength / count);
+    })
+  }
+
+  public transform() {
+    if (!this.Idf) {
+      this.fit();
+    }
+    let vocabularyLength = this.Idf.keys.length;
+    this.Documents.forEach((document: Document) => {
+      var tfVector = []
+      for (var word of this.Idf.keys()) {
+        if (document.termFrequencies.has(word)) {
+          var tfidf = Math.log(1 + document.termFrequencies.get(word)) * this.Idf.get(word);
+          tfVector.push(tfidf);
+        }
+        else {
+          tfVector.push(0.0);
+        }
+        document.vector = tfVector;
       }
-      else{
-        this.CorpusFrequencies.set(word, 1);
+
+
+    });;
+
+  }
+
+  public transformText(text: string): Document {
+    if (!this.Idf) {
+      this.fit();
+    }
+    var document = new Document(text, '')
+    let vocabularyLength = this.Idf.keys.length;
+
+    var tfVector = []
+    for (var word of this.Idf.keys()) {
+      if (document.termFrequencies.has(word)) {
+        var tfidf = Math.log(1 + document.termFrequencies.get(word)) * this.Idf.get(word);
+        tfVector.push(tfidf);
       }
-    }));
+      else {
+        tfVector.push(0.0);
+      }
+      document.vector = tfVector;
+    }
+    ;
+    return document;
   }
 }
+
+
+
 export class Document {
 
   //private Words: string[] | undefined
 
+  public Cid: string
+
   public TermFrequencies: Map<string, number>
 
-  public Vector: []
+  public Vector: number[]
 
   get termFrequencies() {
     return this.TermFrequencies;
   }
 
-  // get words(){
-  //   return this.Words;
-  // }
+  public get vector() {
+    return this.Vector;
+  }
+
+  public set vector(value: number[]) {
+    this.Vector = value;
+  }
 
 
   // Expects a single one of the texts originally passed into Corpus
-  constructor(text: string) {
+  constructor(text: string, cid: string = '') {
     // this.Words = this.tokenize(text);
+    this.Cid = cid;
     this.TermFrequencies = new Map<string, number>;
     const tokenizedDocuments = this.tokenize(text);
     this.calculateTermFrequencies(tokenizedDocuments);
@@ -93,4 +160,22 @@ export class Document {
   }
 
 
+}
+
+export function cosineSimilarity(vector1: number[], vector2: number[]) {
+  const v1 = Array.from(vector1.values());
+  const v2 = Array.from(vector2.values());
+  let dotProduct = 0.0;
+  let ss1 = 0.0;
+  let ss2 = 0.0;
+  const length = Math.min(v1.length, v2.length);
+  for (let i = 0; i < length; i++) {
+    // Ignore pairs that will not affect either the dot product or the magnitude
+    if (v1[i] === 0 && v2[i] === 0) continue;
+    dotProduct += v1[i] * v2[i];
+    ss1 += v1[i] * v1[i];
+    ss2 += v2[i] * v2[i];
+  }
+  const magnitude = Math.sqrt(ss1) * Math.sqrt(ss2);
+  return magnitude ? dotProduct / magnitude : 0.0;
 }

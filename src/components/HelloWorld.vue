@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import json_pages from '../datas/base.json'
-import { Reco, Document} from '../classes/Recommender';
+import { Reco, Document, cosineSimilarity} from '../classes/Recommender';
 
 defineProps<{ msg: string }>();
 
@@ -25,15 +25,20 @@ function test() {
   var documents: Document[] = rows.map((row) => new Document(row));
   console.log(documents[1].termFrequencies);
 
-  var reco = new Reco(rows);
-  reco.calculateCorpusFrequencies();
-  console.log(reco.corpusFrequencies);
+  var reco = new Reco(rows, idx);
+  reco.fit();
+  console.log(reco.idf);
+  reco.transform();
+  console.log(reco.documents[1].vector)
+  var elem = reco.transformText('Rust is an amazing language');
+  console.log(elem.vector);
+  console.log(cosineSimilarity(reco.documents[0].vector, reco.documents[2].vector));
 }
 
 test()
 </script>
 
-<template>
+<template>cosineSimilarity
   <h1>{{ msg }}</h1>
 
   <div class="card">
