@@ -1,8 +1,6 @@
 export class Reco {
   private Idf: Map<string, number>
 
-  private Cids: string[]
-
   private Documents: VectorizedDocument[]
 
   private StopWords: string[]
@@ -10,7 +8,6 @@ export class Reco {
 
   constructor(texts: string[], cids: string[]) {
     this.Idf = new Map<string, number>;
-    this.Cids = [];
     this.Documents = texts.map((text: string, index) => new VectorizedDocument(text, cids[index]));
     this.StopWords = []
   }
@@ -23,13 +20,10 @@ export class Reco {
     return this.Documents;
   }
 
-  /**
-   * calculateCorpusFrequency
-   */
+
   public fit() {
     var corpusFrequencies = new Map<string, number>;
     var corpusLength = this.Documents.length;
-    console.log(corpusLength);
 
     this.Documents.map((VectorizedDocument: VectorizedDocument) => VectorizedDocument.getUniqueTerms()
       .filter(word => !this.StopWords.includes(word))
@@ -42,9 +36,6 @@ export class Reco {
         }
       })
     );
-    console.log("hey"),
-      console.log(corpusFrequencies);
-    console.log('no more hey');
     corpusFrequencies.forEach((count, word) => {
       this.Idf.set(word, corpusLength / count);
     })
@@ -73,11 +64,11 @@ export class Reco {
 
   }
 
-  public transformText(text: string): VectorizedDocument {
+  public transformText(text: string, cid: string = ''): VectorizedDocument {
     if (!this.Idf) {
       this.fit();
     }
-    var document = new VectorizedDocument(text, '')
+    var document = new VectorizedDocument(text, cid)
     let vocabularyLength = this.Idf.keys.length;
 
     var tfVector = []
@@ -94,14 +85,13 @@ export class Reco {
     ;
     return document;
   }
-  public updateDocumentVector(cid: string){
-    
+  public updateDocumentVector(text: string, cid: string){
+    var updatedDoc = this.transformText(text, cid);
+    var docIndex = this.Documents.findIndex(doc => doc.cid ===cid);
+    this.Documents[docIndex] = updatedDoc; 
   }
 
 }
-
-
-
 
 export class VectorizedDocument {
 
@@ -125,19 +115,30 @@ export class VectorizedDocument {
     this.Vector = value;
   }
 
+  public get cid(){
+    return this.Cid;
+  }
 
   // Expects a single one of the texts originally passed into Corpus
   constructor(text: string, cid: string = '') {
     // this.Words = this.tokenize(text);
     this.Cid = cid;
     this.TermFrequencies = new Map<string, number>;
-    const tokenizedVectorizedDocuments = this.tokenize(text);
-    this.calculateTermFrequencies(tokenizedVectorizedDocuments);
+    var tokenizedDocuments = this.tokenize(text);
+    this.calculateTermFrequencies(tokenizedDocuments);
     this.Vector = [];
   }
 
-  public tokenize(VectorizedDocument: string = ''): string[] | undefined {
-    return VectorizedDocument.match(/[a-zA-ZÀ-ÖØ-öø-ÿ]+/g)
+  /**
+   * Tokenize a string.
+   * @see Check {@link https://regex101.com/r/koau2e/1 | here} for regex explaination.
+   * 
+   * @param document - The string containing text to tokinize
+   * 
+   * @returns An array of strings, where all element are a word. It matches neither elements with numbers, nor punctuation marks.
+   */
+  private tokenize(document: string = ''): string[] | undefined {
+    return document.match(/[a-zA-ZÀ-ÖØ-öø-ÿ]+/g)
       ?.filter((word: string) => {
         if (word.length < 2 || word.match(/^\d/)) {
           return false;
@@ -148,9 +149,14 @@ export class VectorizedDocument {
       .map((word: string) => word.toLowerCase());
   }
 
-  public calculateTermFrequencies(tokenizedVectorizedDocuments: string[] | undefined) {
-    if (!tokenizedVectorizedDocuments) return;
-    tokenizedVectorizedDocuments.forEach(word => {
+  /**
+   * Calculate 
+   * @param tokenizedDocument 
+   * @returns 
+   */
+  private calculateTermFrequencies(tokenizedDocument: string[] | undefined) {
+    if (!tokenizedDocument) return;
+    tokenizedDocument.forEach(word => {
       if (this.TermFrequencies.has(word)) {
         this.TermFrequencies.set(word, this.TermFrequencies.get(word) + 1)
       }
