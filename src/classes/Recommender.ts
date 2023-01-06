@@ -5,9 +5,12 @@ export class Reco {
 
   private StopWords: string[]
 
-  constructor(texts: string[], cids: string[]) {
+  private NgramLength: number
+
+  constructor(texts: string[], cids: string[], ngramLength: number = -1) {
+    this.NgramLength =  ngramLength==0 ? -1 : ngramLength;
     this.Idf = new Map<string, number>;
-    this.Documents = texts.map((text: string, index) => new VectorizedDocument(text, cids[index]));
+    this.Documents = texts.map((text: string, index) => new VectorizedDocument(text, cids[index], this.NgramLength));
     this.StopWords = []
   }
 
@@ -20,7 +23,7 @@ export class Reco {
   }
 
   /**
-   * A function gathering all Documents vocabularies and setting the 
+   * A method gathering all Documents vocabularies and setting the 
    * Inverse Documents Frequencies (Idf) property.
    */
   public fit(): void {
@@ -44,7 +47,7 @@ export class Reco {
   }
 
   /**
-   * A function computing and setting vector representation of documents
+   * A method computing and setting vector representation of documents
    */
   public transform(): void {
     if (!this.Idf) {
@@ -85,7 +88,7 @@ export class Reco {
     if (!this.Idf) {
       this.fit();
     }
-    var document = new VectorizedDocument(text, cid)
+    var document = new VectorizedDocument(text, cid, this.NgramLength)
     let vocabularyLength = this.Idf.keys.length;
 
     var tfVector = []
@@ -110,26 +113,26 @@ export class Reco {
    * @param cid - The CID of the document.
    */
   public updateDocumentVector(text: string, cid: string): void {
-    var updatedDoc = this.transformText(text, cid);
+    var updatedDoc = this.transformText(text, cid, this.NgramLength);
     var docIndex = this.Documents.findIndex(doc => doc.cid === cid);
-    if (docIndex){
-    this.Documents[docIndex] = updatedDoc;
+    if (docIndex) {
+      this.Documents[docIndex] = updatedDoc;
     }
-    else{
+    else {
       this.Documents.push(updatedDoc);
     }
   }
 
-  public retriveDocumentByCid(cid: string): VectorizedDocument{
+  public retriveDocumentByCid(cid: string): VectorizedDocument {
     var index = this.Documents.findIndex(doc => doc.cid === cid);
     return this.Documents[index];
   }
 
-  public getClosestDocument(cid: string, n: number): Map<string, number>{
+  public getClosestDocument(cid: string, n: number): Map<string, number> {
     var currentDocument = this.retriveDocumentByCid(cid);
     var scores = new Map<string, number>;
-    for (var document of this.Documents){
-      if(document.cid != cid){
+    for (var document of this.Documents) {
+      if (document.cid != cid) {
         var similarity = cosineSimilarity(currentDocument.vector, document.vector);
         scores.set(document.cid, similarity);
       }
@@ -138,15 +141,15 @@ export class Reco {
     return sortedScores;
   }
 
-  public getClosestDocumentFromText(text: string, n: number): Map<string, number>{
+  public getClosestDocumentFromText(text: string, n: number): Map<string, number> {
     var currentDocument = this.transformText(text);
-    
+
     var scores = new Map<string, number>;
-    for (var document of this.Documents){
-        var similarity = cosineSimilarity(currentDocument.vector, document.vector);
-        scores.set(document.cid, similarity);
-      }
-    
+    for (var document of this.Documents) {
+      var similarity = cosineSimilarity(currentDocument.vector, document.vector);
+      scores.set(document.cid, similarity);
+    }
+
     var sortedScores = new Map([...scores.entries()].sort((a, b) => b[1] - a[1]));
     return sortedScores;
   }
@@ -159,6 +162,8 @@ export class VectorizedDocument {
   public TermFrequencies: Map<string, number>
 
   public Vector: number[]
+
+  private NgramLength: number
 
   public get termFrequencies() {
     return this.TermFrequencies;
@@ -177,7 +182,8 @@ export class VectorizedDocument {
   }
 
   // Expects a single one of the texts originally passed into Corpus
-  constructor(text: string, cid: string = '') {
+  constructor(text: string, cid: string = '', ngramLength: number = -1) {
+    this.NgramLength = ngramLength;
     // this.Words = this.tokenize(text);
     this.Cid = cid;
     this.TermFrequencies = new Map<string, number>;
@@ -196,6 +202,7 @@ export class VectorizedDocument {
    * It matches neither elements with numbers, nor punctuation marks.
    */
   private tokenize(document: string = ''): string[] | undefined {
+    if (this.NgramLength == -1){
     return document.match(/[a-zA-ZÀ-ÖØ-öø-ÿ]+/g)
       ?.filter((word: string) => {
         if (word.length < 2 || word.match(/^\d/)) {
@@ -205,12 +212,28 @@ export class VectorizedDocument {
         }
       })
       .map((word: string) => word.toLowerCase());
+    }
+    else{
+      const nGrams: string[] = [];
+      if (document === null || document === undefined) {
+        return nGrams
+      }
+      const source = typeof document.slice === 'function' ? document : String(document)
+      let index = source.length - this.NgramLength + 1
+      if (index < 1) {
+        return nGrams
+      }
+      while (index--) {
+        nGrams[index] = source.slice(index, index + this.NgramLength)
+      }
+      return nGrams
+    }
   }
 
   /**
-   * Calculate 
-   * @param tokenizedDocument 
-   * @returns 
+   * Calculate Tf for the document and set it up.
+   * @param tokenizedDocument ; An array of each words contained by the VectorizedDocument.
+   * @returns void
    */
   private calculateTermFrequencies(tokenizedDocument: string[] | undefined) {
     if (!tokenizedDocument) return;

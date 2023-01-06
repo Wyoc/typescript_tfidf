@@ -23,7 +23,7 @@ function test() {
   // console.log(rows)
   console.log(idx)
 
-  var reco = new Reco(rows, idx);
+  var reco = new Reco(rows, idx, 0);
   reco.fit();
   console.log(reco.idf);
   reco.transform();
