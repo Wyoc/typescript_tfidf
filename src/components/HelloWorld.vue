@@ -30,7 +30,9 @@ function test() {
   console.log(reco.documents[1].vector)
   var elem = reco.transformText('Rust is an amazing language');
   console.log(elem.vector);
-  console.log(cosineSimilarity(reco.documents[0].vector, reco.documents[2].vector));
+  console.log(cosineSimilarity(elem.vector, reco.documents[2].vector));
+  console.log(reco.getClosestDocument("33139",1));
+  console.log(reco.getClosestDocumentFromText("Rust is the best language", 2));
 }
 
 test()

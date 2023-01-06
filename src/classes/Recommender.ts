@@ -5,7 +5,6 @@ export class Reco {
 
   private StopWords: string[]
 
-
   constructor(texts: string[], cids: string[]) {
     this.Idf = new Map<string, number>;
     this.Documents = texts.map((text: string, index) => new VectorizedDocument(text, cids[index]));
@@ -21,7 +20,8 @@ export class Reco {
   }
 
   /**
-   * A function gathering all Documents vocabularies and setting the Inverse Documents Frequencies (Idf) property.
+   * A function gathering all Documents vocabularies and setting the 
+   * Inverse Documents Frequencies (Idf) property.
    */
   public fit(): void {
     var corpusFrequencies = new Map<string, number>;
@@ -46,7 +46,7 @@ export class Reco {
   /**
    * A function computing and setting vector representation of documents
    */
-  public transform() {
+  public transform(): void {
     if (!this.Idf) {
       this.fit();
     }
@@ -70,7 +70,7 @@ export class Reco {
   /**
    * Perform both fit and transform function
    */
-  public fitTransform(){
+  public fitTransform() {
     this.fit();
     this.transform();
   }
@@ -104,21 +104,55 @@ export class Reco {
   }
 
   /**
-   * A function taking a new version of an existing document, updating its representation in the recommender.
+   * A function taking a new version of an existing document and updating 
+   * its representation in the recommender.
    * @param text - The new text of the document to update
    * @param cid - The CID of the document.
    */
-  public updateDocumentVector(text: string, cid: string){
+  public updateDocumentVector(text: string, cid: string): void {
     var updatedDoc = this.transformText(text, cid);
-    var docIndex = this.Documents.findIndex(doc => doc.cid ===cid);
-    this.Documents[docIndex] = updatedDoc; 
+    var docIndex = this.Documents.findIndex(doc => doc.cid === cid);
+    if (docIndex){
+    this.Documents[docIndex] = updatedDoc;
+    }
+    else{
+      this.Documents.push(updatedDoc);
+    }
   }
 
+  public retriveDocumentByCid(cid: string): VectorizedDocument{
+    var index = this.Documents.findIndex(doc => doc.cid === cid);
+    return this.Documents[index];
+  }
+
+  public getClosestDocument(cid: string, n: number): Map<string, number>{
+    var currentDocument = this.retriveDocumentByCid(cid);
+    var scores = new Map<string, number>;
+    for (var document of this.Documents){
+      if(document.cid != cid){
+        var similarity = cosineSimilarity(currentDocument.vector, document.vector);
+        scores.set(document.cid, similarity);
+      }
+    }
+    var sortedScores = new Map([...scores.entries()].sort((a, b) => b[1] - a[1]));
+    return sortedScores;
+  }
+
+  public getClosestDocumentFromText(text: string, n: number): Map<string, number>{
+    var currentDocument = this.transformText(text);
+    
+    var scores = new Map<string, number>;
+    for (var document of this.Documents){
+        var similarity = cosineSimilarity(currentDocument.vector, document.vector);
+        scores.set(document.cid, similarity);
+      }
+    
+    var sortedScores = new Map([...scores.entries()].sort((a, b) => b[1] - a[1]));
+    return sortedScores;
+  }
 }
 
 export class VectorizedDocument {
-
-  //private Words: string[] | undefined
 
   public Cid: string
 
@@ -126,7 +160,7 @@ export class VectorizedDocument {
 
   public Vector: number[]
 
-  get termFrequencies() {
+  public get termFrequencies() {
     return this.TermFrequencies;
   }
 
@@ -138,7 +172,7 @@ export class VectorizedDocument {
     this.Vector = value;
   }
 
-  public get cid(){
+  public get cid() {
     return this.Cid;
   }
 
@@ -158,7 +192,8 @@ export class VectorizedDocument {
    * 
    * @param document - The string containing text to tokinize
    * 
-   * @returns An array of strings, where all element are a word. It matches neither elements with numbers, nor punctuation marks.
+   * @returns An array of strings, where all element are a word. 
+   * It matches neither elements with numbers, nor punctuation marks.
    */
   private tokenize(document: string = ''): string[] | undefined {
     return document.match(/[a-zA-ZÀ-ÖØ-öø-ÿ]+/g)
@@ -187,6 +222,8 @@ export class VectorizedDocument {
         this.TermFrequencies.set(word, 1);
       }
     })
+
+
 
   }
   getUniqueTerms() {
